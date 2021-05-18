@@ -19,23 +19,23 @@ func init() {
 	}
 	now := time.Now()
 	t := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location()).Unix()
-	fmt.Println("dynamicPwd: ",string(dynamicPwd))
-	timer := time.NewTimer(time.Duration(t - now.Unix()) * time.Second)
+	fmt.Println("dynamicPwd: ", string(dynamicPwd))
+	timer := time.NewTimer(time.Duration(t-now.Unix()) * time.Second)
 	go func() {
-		for  {
+		for {
 			select {
-			case <- timer.C:
+			case <-timer.C:
 				rand.Seed(time.Now().UnixNano())
 				var newPwd []byte = make([]byte, 0, 8)
 				for i := 0; i < 8; i++ {
 					r := rand.Uint64()%10 + '0'
-					newPwd = append(dynamicPwd, byte(r))
+					newPwd = append(newPwd, byte(r))
 				}
 				dynamicPwd = newPwd
 				now := time.Now()
-				fmt.Println("update dynamicPwd: ",string(dynamicPwd))
+				fmt.Println("update dynamicPwd: ", string(dynamicPwd))
 				t := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location()).Unix()
-				timer = time.NewTimer(time.Duration(t - now.Unix()) * time.Second)
+				timer = time.NewTimer(time.Duration(t-now.Unix()) * time.Second)
 				conn, ok := connMap[LOCK_DEVICE]
 				if ok {
 					sendUpdateDynamicPwd(conn)
@@ -76,8 +76,8 @@ func UpdatePwd(w http.ResponseWriter, r *http.Request) {
 }
 
 func DynamicPwd(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("dynamicPwd:",dynamicPwd)
-	for  {
+	fmt.Println("dynamicPwd:", dynamicPwd)
+	for {
 		n, err := w.Write(dynamicPwd)
 		if err != nil {
 			fmt.Println(err)
