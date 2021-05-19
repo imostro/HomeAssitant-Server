@@ -18,14 +18,13 @@ func SendMail(mailTo []string, subject string, body string) error {
 	// 端口号，:25也行
 	mailSmtpPort := ":587"
 	//邮箱的授权码，去邮箱自己获取
-	Mail_Password := "bckzfwqczeahwybjfead"
+	Mail_Password := "reikuqemnckecaij"
 	// 此处填写SMTP服务器
 	Mail_Smtp_Host := "smtp.qq.com"
 	auth := smtp.PlainAuth("", userEmail, Mail_Password, Mail_Smtp_Host)
 	nickname := "家庭安全小管家"
 	user := userEmail
 	contentType := "Content-Type: text/plain; charset=UTF-8"
-
 
 	msg := []byte("To: " + strings.Join(mailTo, ",") + "\r\nFrom: " + nickname +
 		"<" + user + ">\r\nSubject: " + subject + "\r\n" + contentType + "\r\n\r\n" + body)

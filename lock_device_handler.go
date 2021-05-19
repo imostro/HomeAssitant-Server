@@ -71,10 +71,11 @@ func ConnHandle(rowConn net.Conn) {
 	}
 	connMap[LOCK_DEVICE] = conn
 
-	wg.Add(3)
+	wg.Add(4)
 	go readHandle(wg, conn)
 	go writeHandle(wg, conn)
 	go PwdErrListener(wg, conn)
+	go UpdateDynamicPwd(wg, conn)
 
 	select {
 	case <-conn.done:
@@ -129,8 +130,10 @@ func readHandle(wg *sync.WaitGroup, conn *Conn) {
 				log.Println("register success: ", data)
 				log.Println("register resp temppwd: ", dynamicPwd)
 				sendRegisterResp(conn)
+				sendUpdateDynamicPwd(conn)
 			case HB:
 				log.Println("hb")
+				sendHbResp(conn)
 				break
 			case ERR_NOTIFY_REQ:
 				conn.errInputNotifyCh <- struct{}{}
@@ -172,7 +175,7 @@ func PwdErrListener(wg *sync.WaitGroup, conn *Conn) {
 	timerCh := time.After(60 * time.Second)
 	for {
 		select {
-		case <- timerCh:
+		case <-timerCh:
 			conn.errCnt = 0
 		case <-conn.errInputNotifyCh:
 			conn.errCnt++
@@ -196,10 +199,33 @@ func PwdErrListener(wg *sync.WaitGroup, conn *Conn) {
 	}
 }
 
+func UpdateDynamicPwd(wg *sync.WaitGroup, conn *Conn) {
+	defer wg.Done()
+	ticker := time.NewTicker(time.Second * 5)
+	for {
+		select {
+		case <-ticker.C:
+			sendUpdateDynamicPwd(conn)
+		case <-conn.ctx.Done():
+			return
+		}
+	}
+
+}
+
 func sendRegisterResp(conn *Conn) {
 	sendData := make([]byte, 0, 5)
 	sendData = append(sendData, start, REGISTER_RESP, 8)
 	sendData = append(sendData, dynamicPwd...)
+	sendData = append(sendData, end)
+
+	conn.writeCh <- sendData
+}
+
+func sendHbResp(conn *Conn) {
+	sendData := make([]byte, 0, 5)
+	sendData = append(sendData, start, HB, 1)
+	sendData = append(sendData, 9)
 	sendData = append(sendData, end)
 
 	conn.writeCh <- sendData
